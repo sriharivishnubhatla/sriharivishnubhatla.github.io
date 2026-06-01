@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OpenPTU Controller</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 420px; margin: 40px auto; background: #f4f4f5; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        input { width: 100px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: right; font-family: monospace; }
+        
+        button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; font-weight: bold; font-size: 1em; cursor: pointer; transition: 0.2s; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        #connectBtn { background: #3b82f6; color: white; }
+        .btn-arm { background: #f59e0b; color: white; }
+        .btn-start { background: #10b981; color: white; }
+        .btn-stop { background: #ef4444; color: white; margin-top: 20px; }
+        .btn-toggle { background: #94a3b8; color: white; margin-top: 15px; font-size: 0.9em; padding: 8px; }
+        .btn-clear { background: #475569; color: white; margin-top: 5px; font-size: 0.8em; padding: 5px; width: auto; float: right; }
+        
+        #status { text-align: center; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; color: #64748b; }
+        .controls-container { display: none; } 
+        
+        .action-row { display: flex; gap: 10px; margin-top: 20px; }
+
+        /* Connection Bar Styles */
+        #connectionBar {
+            display: none;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        #disconnectBtn {
+            width: auto;
+            margin: 0;
+            padding: 6px 12px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        /* Terminal Styles */
+        #terminalContainer { display: none; margin-top: 15px; border-radius: 6px; background: #1e293b; padding: 10px; }
+        #terminalOutput { height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; word-wrap: break-word; line-height: 1.4; padding-bottom: 10px; }
+        .log-tx { color: #60a5fa; } /* Blue for sent commands */
+        .log-rx { color: #34d399; } /* Green for received data */
+        .log-time { color: #64748b; user-select: none; }
+
+        /* Info Icon & Tooltip Styles */
+        .label-with-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #94a3b8;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            font-style: italic;
+            cursor: help;
+            position: relative;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .info-icon:hover {
+            background: #64748b;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            width: 260px;
+            background: #1e293b;
+            color: #e2e8f0;
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 1.2em;
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1.4;
+            position: absolute;
+            z-index: 10;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+            pointer-events: none;
+            white-space: normal;
+        }
+        .tooltip-text::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        .info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="margin-top:0; text-align:center;">
+        OpenPTU Controller
+    </h2>
+    <h2 style="margin-top:0; text-align:center;">
+    <a
+          href="https://github.com/sriharivishnubhatla/OpenPTU"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 0.45em;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 20px;
+            transition: background 0.2s, color 0.2s;
+            vertical-align: middle;
+            line-height: 1.2;
+          "
+          onmouseover="this.style.background='#e2e8f0'; this.style.color='#1e293b';"
+          onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b';"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          Learn more at GitHub
+        </a>
+    </h2>
+    <div id="connectionBar">
+        <span id="portInfoText">Connected to Serial Port</span>
+        <button id="disconnectBtn">Disconnect</button>
+    </div>
+
+    <div id="status">Status: Disconnected</div>
+    
+    <button id="connectBtn">Connect to Controller</button>
+
+    <div id="controls" class="controls-container">
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>Rep Rate (Hz)</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Total repetition rate of imaging. Determines how many times per second the sequence repeats (e.g., 50 Hz = 50 pulse pairs per second).</span>
+                </span>
+            </div>
+            <input type="number" id="rep" step="0.1" value="50.0">
+        </div>
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>Camera FPS</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Frame rate of the camera sensor used for synchronization (e.g., 1000 FPS). Must match the FPS set in the camera's own configuration software. This setting will inform the PTU the frequency of the camera.</span>
+                </span>
+            </div>
+            <input type="number" id="fps" value="1000">
+        </div>
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>Delta T (µs)</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Frame separation. Time interval between two consecutive pulses.</span>
+                </span>
+            </div>
+            <input type="number" id="dt" value="50">
+        </div>
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>Offset (µs)</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Global timing offset applied to all Laser pulses with respect to the Camera pulses. Useful for fine-tuning the overall synchronization with the camera system. Typically, you shouldn't need this due to the logic of PTU.</span>
+                </span>
+            </div>
+            <input type="number" id="offset" value="0">
+        </div>
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>t_QSW1 (µs)</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Q Switch delay of the first cavity. Controls the laser pulse intensity for the first laser channel. Refer to manufacturer spec for this value.</span>
+                </span>
+            </div>
+            <input type="number" id="q1" value="120">
+        </div>
+        <div class="input-group">
+            <div class="label-with-info">
+                <label>t_QSW2 (µs)</label>
+                <span class="info-icon">i
+                    <span class="tooltip-text">Q Switch delay of the second cavity. Controls the laser pulse intensity for the second laser channel. Refer to manufacturer spec for this value.</span>
+                </span>
+            </div>
+            <input type="number" id="q2" value="128">
+        </div>
+
+        <div class="action-row">
+            <button id="armBtn" class="btn-arm">1. Write & ARM</button>
+            <button id="startBtn" class="btn-start" disabled>2. START </button>
+        </div>
+        
+        <button id="stopBtn" class="btn-stop" disabled>STOP</button>
+        
+        <button id="toggleTerminalBtn" class="btn-toggle">Show Serial Terminal</button>
+        
+        <div id="terminalContainer">
+            <div id="terminalOutput"></div>
+            <button id="clearTerminalBtn" class="btn-clear">Clear</button>
+            <div style="clear: both;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let port;
+    let writer;
+    let reader;
+    let readableStreamClosed;
+    let writableStreamClosed;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const connectionBar = document.getElementById('connectionBar');
+    const portInfoText = document.getElementById('portInfoText');
+    const controlsDiv = document.getElementById('controls');
+    const status = document.getElementById('status');
+    
+    const armBtn = document.getElementById('armBtn');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    
+    const toggleTerminalBtn = document.getElementById('toggleTerminalBtn');
+    const terminalContainer = document.getElementById('terminalContainer');
+    const terminalOutput = document.getElementById('terminalOutput');
+    const clearTerminalBtn = document.getElementById('clearTerminalBtn');
+
+    // --- Terminal Functions ---
+    function logToTerminal(text, type) {
+        const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const span = document.createElement('span');
+        
+        if (type === 'tx') {
+            span.className = 'log-tx';
+            span.innerHTML = `<span class="log-time">[${timeStr}]</span> ↑ ${text}\n`;
+        } else {
+            span.className = 'log-rx';
+            span.innerHTML = `<span class="log-time">[${timeStr}]</span> ↓ ${text}\n`;
+        }
+        
+        terminalOutput.appendChild(span);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight; // Auto-scroll to bottom
+    }
+
+    toggleTerminalBtn.addEventListener('click', () => {
+        if (terminalContainer.style.display === 'block') {
+            terminalContainer.style.display = 'none';
+            toggleTerminalBtn.innerText = 'Show Serial Terminal';
+        } else {
+            terminalContainer.style.display = 'block';
+            toggleTerminalBtn.innerText = 'Hide Serial Terminal';
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+    });
+
+    clearTerminalBtn.addEventListener('click', () => {
+        terminalOutput.innerHTML = '';
+    });
+
+    // --- Connection Logic ---
+    connectBtn.addEventListener('click', async () => {
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+
+            // Try to extract USB info since browsers hide COM port names
+            const info = port.getInfo();
+            if (info.usbVendorId && info.usbProductId) {
+                portInfoText.innerText = `Connected (VID: ${info.usbVendorId.toString(16)}, PID: ${info.usbProductId.toString(16)})`;
+            } else {
+                portInfoText.innerText = `Connected to Serial Port`;
+            }
+            
+            const textEncoder = new TextEncoderStream();
+            writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+            writer = textEncoder.writable.getWriter();
+
+            const textDecoder = new TextDecoderStream();
+            readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            reader = textDecoder.readable.getReader();
+            
+            status.innerText = "Status: Connected";
+            status.style.color = "#3b82f6";
+            connectBtn.style.display = "none";
+            connectionBar.style.display = "flex";
+            controlsDiv.style.display = "block";
+
+            logToTerminal("Port opened at 115200 baud.", 'rx');
+            readLoop();
+
+        } catch (err) {
+            alert('Failed to connect: ' + err);
+        }
+    });
+
+    // --- Disconnect Logic ---
+    disconnectBtn.addEventListener('click', async () => {
+        try {
+            // 1. Send STOP command before disconnecting
+            if (writer) {
+                try {
+                    await writer.write("<STOP>");
+                    logToTerminal("<STOP> (Auto-stop on disconnect)", 'tx');
+                    // Add a tiny delay to ensure the data is flushed over the serial connection 
+                    // before tearing down the hardware port
+                    await new Promise(resolve => setTimeout(resolve, 100)); 
+                } catch (e) {
+                    console.warn("Could not send STOP command:", e);
+                }
+            }
+
+            // 2. Cancel the read loop and close the writer safely
+            if (reader) {
+                await reader.cancel();
+            }
+            if (writer) {
+                await writer.close();
+            }
+
+            // 3. Wait for streams to close completely
+            if (readableStreamClosed) await readableStreamClosed.catch(() => {});
+            if (writableStreamClosed) await writableStreamClosed.catch(() => {});
+
+            // 4. Close the physical port
+            if (port) {
+                await port.close();
+            }
+
+            // 5. Reset UI
+            status.innerText = "Status: Disconnected";
+            status.style.color = "#64748b";
+            connectBtn.style.display = "block";
+            connectionBar.style.display = "none";
+            controlsDiv.style.display = "none";
+            
+            // Reset Button States
+            armBtn.innerText = "1. Write & ARM";
+            armBtn.disabled = false;
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+
+            logToTerminal("Disconnected from port.", 'rx');
+
+        } catch (err) {
+            console.error("Disconnect error:", err);
+            alert("Error disconnecting: " + err);
+        }
+    });
+
+    // --- Write Commands (With Pre-Flight Metrology Validation) ---
+    armBtn.addEventListener('click', async () => {
+        // Parse inputs as numbers for mathematical validation
+        const rep = parseFloat(document.getElementById('rep').value);
+        const fps = parseInt(document.getElementById('fps').value, 10);
+        let dt = parseInt(document.getElementById('dt').value, 10);
+        const offset = parseInt(document.getElementById('offset').value, 10);
+        const q1 = parseInt(document.getElementById('q1').value, 10);
+        const q2 = parseInt(document.getElementById('q2').value, 10);
+
+        // enable this to activate the pre-flight checks. Currently disabled for testing purposes, but will be critical for ensuring safe and reliable operation once users start experimenting with different parameter combinations.
+        // ==========================================
+        // 1. THE EXECUTION FLOOR CHECK
+        // ==========================================
+        if (dt < 12) {
+            alert("HARDWARE LIMITATION:\n\nMinimum Delta T is 12 µs.\nThe 16MHz ATmega328P requires ~11 µs of bare-metal execution time to process the dynamic state machine. Please set Delta T to 12 µs or higher.");
+            return; // Abort transmission
+        }
+
+        // ==========================================
+        // 2. THE STRADDLE FRAMING CHECK
+        // ==========================================
+        if (fps < (rep * 2)) {
+            alert(`FRAMING ERROR:\n\nCamera FPS must be at least twice the Repetition Rate.\nTo capture a straddle pair at ${rep} Hz, the camera must run at ${rep * 2} FPS or higher. Your current FPS is ${fps}.`);
+            return; 
+        }
+
+        // ==========================================
+        // 3. THE FRAME BOUNDARY CHECK
+        // ==========================================
+        const camPeriodUs = 1000000 / fps;
+        const maxDt = Math.floor(1.8 * camPeriodUs); // 10% safety margin from theoretical 2x limit
+        
+        if (dt > maxDt) {
+            alert(`SYNCHRONIZATION ERROR:\n\nDelta T is too large for the current Camera Framerate.\nAt ${fps} FPS, the camera frame period is ${Math.round(camPeriodUs)} µs. A Delta T of ${dt} µs will cause the laser pulses to miss the camera exposure windows.\n\nMaximum allowed Delta T at ${fps} FPS is ${maxDt} µs.`);
+            return; 
+        }
+
+        // ==========================================
+        // 4. Q-SWITCH SAFETY CHECK
+        // ==========================================
+        if (q1 > camPeriodUs || q2 > camPeriodUs) {
+             alert(`Q-SWITCH ERROR:\n\nQ-Switch delays (${q1} µs, ${q2} µs) are unusually large and exceed the camera frame period (${Math.round(camPeriodUs)} µs). This will cause sequence overlap.`);
+             return;
+        }
+
+        // --- Validation Passed! Send to Arduino ---
+        const commandString = `<ARM,${rep},${fps},${dt},${offset},${q1},${q2}>`;
+        await writer.write(commandString);
+        logToTerminal(commandString, 'tx');
+    });
+
+    startBtn.addEventListener('click', async () => {
+        await writer.write("<START>");
+        logToTerminal("<START>", 'tx');
+    });
+
+    stopBtn.addEventListener('click', async () => {
+        await writer.write("<STOP>");
+        logToTerminal("<STOP>", 'tx');
+    });
+
+    // --- Read Loop (Handling Arduino Acknowledgments) ---
+    async function readLoop() {
+        let buffer = '';
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (value) {
+                    buffer += value;
+                    let lines = buffer.split('\n');
+                    
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        let cleanLine = lines[i].trim();
+                        if(cleanLine) {
+                            logToTerminal(cleanLine, 'rx');
+                            handleArduinoResponse(cleanLine);
+                        }
+                    }
+                    buffer = lines[lines.length - 1];
+                }
+                if (done) {
+                    reader.releaseLock();
+                    break;
+                }
+            }
+        } catch (error) {
+            // Ignore errors triggered by intentional disconnection
+        }
+    }
+
+    function handleArduinoResponse(response) {
+        if (response.includes("ACK_ARM")) {
+            status.innerText = "Status: ARMED & Ready";
+            status.style.color = "#f59e0b"; 
+            
+            armBtn.innerText = "Re-Arm System";
+            startBtn.disabled = false;
+            stopBtn.disabled = false;
+            
+        } else if (response.includes("ACK_START")) {
+            status.innerText = "Status: RUNNING (Firing)";
+            status.style.color = "#10b981"; 
+            
+            armBtn.disabled = true; 
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+        } else if (response.includes("ACK_STOP")) {
+            status.innerText = "Status: STOPPED";
+            status.style.color = "#ef4444"; 
+            
+            armBtn.disabled = false;
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+        }
+    }
+</script>
+
+</body>
+</html>

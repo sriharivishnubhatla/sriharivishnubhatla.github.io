@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://sriharivishnubhatla.github.io/sitemap-index.xml
