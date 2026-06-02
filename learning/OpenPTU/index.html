@@ -304,7 +304,7 @@ Beyond The Lab
 <li><a href="#pin-mapping-arduino-uno---port-d">Pin Mapping (Arduino UNO - Port D)</a></li>
 <li><a href="#laser-settings">Laser Settings</a></li>
 <li><a href="#camera-settings">Camera Settings</a></li>
-<li><a href="#stm32f103c8t6-blue-pill-edition">STM32F103C8T6 (Blue Pill) Edition</a></li>
+<li><a href="#stm32f103c8t6-blue-pill-version">STM32F103C8T6 (Blue Pill) Version</a></li>
 <li><a href="#hardware-safety--isolation">Hardware Safety &amp; Isolation</a></li>
 </ul>
 </li>
@@ -409,7 +409,7 @@ Beyond The Lab
 <li><strong>Exposure Time:</strong> 1/framerate (e.g., 1ms for 1000 FPS)</li>
 <li><strong>Frames per trigger:</strong> 2 (Most Important). For every given trigger signal, the camera must capture exactly 2 frames. This is critical for frame-straddling operations in TR-PIV. This is also known as frame-on-demand or Random Trigger mode in some cameras.</li>
 </ul>
-<h3 id="stm32f103c8t6-blue-pill-edition">STM32F103C8T6 (Blue Pill) Edition</h3>
+<h3 id="stm32f103c8t6-blue-pill-version">STM32F103C8T6 (Blue Pill) Version</h3>
 <p>For the STM32 variant, all timing signals are mapped to <strong>Port A</strong> (PA2 through PA7).
 <strong>Important:</strong> The STM32 operates at 3.3V logic. You <strong>must</strong> use a logic level shifter (such as the <strong>74AHCT125</strong> quad buffer) to cleanly step up the 3.3V signals to the 5V TTL logic expected by standard cameras and lasers.</p>
 <h3 id="hardware-safety--isolation">Hardware Safety &amp; Isolation</h3>
