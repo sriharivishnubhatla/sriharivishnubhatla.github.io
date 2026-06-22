@@ -325,7 +325,7 @@ Beyond The Lab
 <li><strong>Multi-Platform Support:</strong> Compatible with Arduino UNO (16MHz AVR) and STM32F103C8T6 “Blue Pill” (72MHz ARM Cortex-M3) at present.</li>
 <li><strong>Continuous Phase Hardware Architecture:</strong> Utilizes direct hardware timers without prescaling (TCNT1 for AVR, DWT CYCCNT for ARM) to achieve nanosecond-tier resolution (62.5ns on Uno, 13.8ns on STM32). Executing pulses with sub-microsecond precision.</li>
 <li><strong>Phase-Locked Execution:</strong> By pre-compiling the macroscopic states and utilizing a remainder phase lock, the system never loses synchronization, even across large temporal gaps.</li>
-<li><strong>TR-PIV Ready:</strong> Successfully tested for Time-Resolved PIV frame-straddling operations with extremely short inter-frame times (~ 1μs).</li>
+<li><strong>TR-PIV Ready:</strong> Successfully tested for Time-Resolved PIV frame-straddling operations in wind tunnel experiments.</li>
 </ul>
 <h2 id="control-interface-webserial-api">Control Interface (WebSerial API)</h2>
 <p>OpenPTU features a plug-and-play graphical user interface built on the WebSerial API (<code>ControlUI.html</code>). No heavy desktop software installation is required.</p>
